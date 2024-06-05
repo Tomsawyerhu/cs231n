@@ -2,3 +2,5 @@
 **/notebook_images/
 *.tar.gz
 **/__pycache__/
+**/*.pyc
+**/MNIST_data/
