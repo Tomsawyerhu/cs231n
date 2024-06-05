@@ -1,5 +1,4 @@
 **/cifar-10-batches-py/
-**/notebook_images/
 *.tar.gz
 **/__pycache__/
 **/*.pyc
