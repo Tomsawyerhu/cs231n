@@ -147,9 +147,39 @@ class CaptioningRNN:
         # in your implementation, if needed.                                       #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
-
+        
+        h0,h0_cache=affine_forward(features,W_proj,b_proj)
+        word_embedding,word_embedding_cache=word_embedding_forward(captions_in,W_embed)
+        
+        # forward
+        if self.cell_type=='rnn':
+            h, cache=np.zeros(captions_in.shape[0],captions_in.shape[1],b_proj.shape[0]),()
+        elif self.cell_type=='lstm':
+            h, cache=lstm_forward(word_embedding,h0,Wx,Wh,b)
+        else:
+          raise ValueError('Invalid cell_type "%s"' % self.cell_type)
+            
+        scores,scores_cache=temporal_affine_forward(h,W_vocab,b_vocab)
+        loss,dx_softmax=temporal_softmax_loss(scores,captions_out,mask)
+        
+        # backward
+        dx_vocab, dW_vocab, db_vocab=temporal_affine_backward(dx_softmax,scores_cache)
+        grads['W_vocab'],grads['b_vocab']=dW_vocab,db_vocab
+        
+        if self.cell_type=='rnn':
+            dx, dh0, dWx, dWh, db=rnn_backward(dx_vocab,cache)
+        elif self.cell_type=='lstm':
+            dx, dh0, dWx, dWh, db=lstm_backward(dx_vocab,cache)
+        else:
+          raise ValueError('Invalid cell_type "%s"' % self.cell_type)
+        grads['Wx'],grads['Wh'],grads['b']=dWx,dWh,db
+        
+        dW_embed=word_embedding_backward(dx,word_embedding_cache)
+        grads['W_embed']=dW_embed
+        
+        dx_proj, dW_proj, db_proj=affine_backward(dh0,h0_cache)
+        grads['W_proj'],grads['b_proj']=dW_proj,db_proj
+        
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
