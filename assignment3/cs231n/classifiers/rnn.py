@@ -153,7 +153,7 @@ class CaptioningRNN:
         
         # forward
         if self.cell_type=='rnn':
-            h, cache=np.zeros(captions_in.shape[0],captions_in.shape[1],b_proj.shape[0]),()
+            h, cache=rnn_forward(word_embedding,h0,Wx,Wh,b)
         elif self.cell_type=='lstm':
             h, cache=lstm_forward(word_embedding,h0,Wx,Wh,b)
         else:
