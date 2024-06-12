@@ -38,7 +38,9 @@ class PositionalEncoding(nn.Module):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        for i in range(max_len):
+          for j in range(embed_dim):
+            pe[0][i][j]=i*(10000.0**(-j/embed_dim)) if j%2==0 else i*(10000.0**(-(j-1)/embed_dim))
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -70,7 +72,12 @@ class PositionalEncoding(nn.Module):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        for i in range(N):
+          for j in range(S):
+            for k in range(D):
+              output[i,j,k]=x[i][j][k]+(torch.sin(self.pe[0,j,k]) if k%2==0 else torch.cos(self.pe[0,j,k]))
+              
+        output=self.dropout(output)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -164,8 +171,34 @@ class MultiHeadAttention(nn.Module):
         #     function masked_fill may come in handy.                              #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        Q=self.query(query) # N,S,E
+        Q=Q.view(N,S,self.n_head,self.head_dim) # N,S,H,E/H
+        Q=Q.permute(0,2,1,3) # N,H,S,E/H
 
-        pass
+        K=self.key(key) # N,T,E
+        K=K.view(N,T,self.n_head,self.head_dim) # N,T,H,E/H
+        K=K.permute(0,2,3,1) # N,H,E/H,T
+        
+        V=self.value(value)
+        V=V.view(N,T,self.n_head,self.head_dim) # N,T,H,E/H
+        V=V.permute(0,2,1,3) # N,H,T,E/H
+
+        scores=torch.matmul(Q,K) # N,H,S,T
+        # scaling
+        scores=scores/math.sqrt(self.head_dim)
+        
+        # apply attn mask
+        if attn_mask is not None:
+            scores=scores.masked_fill(attn_mask==False,-float('inf'))
+       
+        # softmax
+        scores=F.softmax(scores,dim=3)
+        # dropout
+        weights=self.attn_drop(scores)
+        output=weights.matmul(V) # N,H,S,E/H
+        
+        output=output.transpose(1,2).reshape(N,S,E) # N,S,E
+        output=self.proj(output)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################

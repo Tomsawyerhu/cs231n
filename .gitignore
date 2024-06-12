@@ -4,3 +4,5 @@
 **/*.pyc
 **/MNIST_data/
 **/coco_captioning/
+**/pretrained_model/
+**/data/

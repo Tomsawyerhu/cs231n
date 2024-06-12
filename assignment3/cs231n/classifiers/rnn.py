@@ -245,9 +245,29 @@ class CaptioningRNN:
         # you are using an LSTM, initialize the first cell state to zeros.        #
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        
+        h0,_=affine_forward(features,W_proj,b_proj)
+        _x=self._start
+        captions[:,0]=self._start
+        _h=h0
+        _c=np.zeros_like(h0) if self.cell_type=='lstm' else None
+        
+        for i in range(max_length-1):
+            word_embedding,_=word_embedding_forward(_x,W_embed)
+            if self.cell_type=='rnn':
+                _h, _=rnn_step_forward(word_embedding,_h,Wx,Wh,b)
+            elif self.cell_type=='lstm':
+                _h, _c, _=lstm_step_forward(word_embedding,_h,_c,Wx,Wh,b)
+            else:
+                raise ValueError('Invalid cell_type "%s"' % self.cell_type)
+            # sampling
+            scores, _ = affine_forward(_h, W_vocab, b_vocab)
+            _x = np.argmax(scores, axis=1)
+            captions[:, i+1] = _x
 
-        pass
-
+            if np.all(_x==self._end):
+                break
+        
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
